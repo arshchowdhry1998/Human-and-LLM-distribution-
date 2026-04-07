@@ -233,38 +233,38 @@ def compute_trait_scores(df: pd.DataFrame) -> pd.DataFrame:
 # TABLE 2: TRAIT-LEVEL MEAN COMPARISONS
 # ==============================================================================
 
-# def trait_level_comparison(trait_scores: pd.DataFrame, 
-#                            ref_group: str = "Human",
-#                            comp_group: str = "GPT-4.1") -> pd.DataFrame:
-#     """
-#     Compare trait-level means between human and LLM responses
-#     """
-#     traits = list(TRAIT_STRUCTURE.keys())
-#     results = []
+def trait_level_comparison(trait_scores: pd.DataFrame, 
+                           ref_group: str = "Human",
+                           comp_group: str = "GPT-4.1") -> pd.DataFrame:
+    """
+    Compare trait-level means between human and LLM responses
+    """
+    traits = list(TRAIT_STRUCTURE.keys())
+    results = []
     
-#     for trait in traits:
-#         human_vals = trait_scores[trait_scores['source'] == ref_group][trait].values
-#         llm_vals = trait_scores[trait_scores['source'] == comp_group][trait].values
+    for trait in traits:
+        human_vals = trait_scores[trait_scores['source'] == ref_group][trait].values
+        llm_vals = trait_scores[trait_scores['source'] == comp_group][trait].values
         
-#         # t-test
-#         t_stat, p_val = stats.ttest_ind(llm_vals, human_vals)
+        # t-test
+        t_stat, p_val = stats.ttest_ind(llm_vals, human_vals)
         
-#         # Cohen's d
-#         d = cohen_d(llm_vals, human_vals)
+        # Cohen's d
+        d = cohen_d(llm_vals, human_vals)
         
-#         results.append({
-#             'Trait': trait,
-#             'Human_Mean': human_vals.mean(),
-#             'Human_SD': human_vals.std(),
-#             'LLM_Mean': llm_vals.mean(),
-#             'LLM_SD': llm_vals.std(),
-#             'Mean_Diff': llm_vals.mean() - human_vals.mean(),
-#             't_statistic': t_stat,
-#             'p_value': p_val,
-#             'Cohens_d': d
-#         })
+        results.append({
+            'Trait': trait,
+            'Human_Mean': human_vals.mean(),
+            'Human_SD': human_vals.std(),
+            'LLM_Mean': llm_vals.mean(),
+            'LLM_SD': llm_vals.std(),
+            'Mean_Diff': llm_vals.mean() - human_vals.mean(),
+            't_statistic': t_stat,
+            'p_value': p_val,
+            'Cohens_d': d
+        })
     
-#     return pd.DataFrame(results)
+    return pd.DataFrame(results)
 
 # ==============================================================================
 # TABLE 3: ITEM-LEVEL AGREEMENT
