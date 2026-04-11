@@ -1,0 +1,2 @@
+Comparison,AUC,Accuracy,F1_score,Mean_Mahalanobis
+Human vs LLM,0.11575273165928704,0.9999001503735374,0.0,1.5637399728661505

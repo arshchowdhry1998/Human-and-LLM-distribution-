@@ -270,161 +270,161 @@ def compute_trait_scores(df: pd.DataFrame) -> pd.DataFrame:
 # TABLE 3: ITEM-LEVEL AGREEMENT
 # ==============================================================================
 
-def item_level_agreement(df: pd.DataFrame,
-                         ref_group: str = "Human",
-                         comp_group: str = "LLM") -> dict:
-    """
-    Compute item-level agreement metrics
-    """
-    item_cols = [f'item_{i}' for i in range(1, 51)]
+# def item_level_agreement(df: pd.DataFrame,
+#                          ref_group: str = "Human",
+#                          comp_group: str = "LLM") -> dict:
+#     """
+#     Compute item-level agreement metrics
+#     """
+#     item_cols = [f'item_{i}' for i in range(1, 51)]
     
-    # Calculate means for each group
-    human_means = df[df['source'] == ref_group][item_cols].mean().values
-    llm_means = df[df['source'] == comp_group][item_cols].mean().values
+#     # Calculate means for each group
+#     human_means = df[df['source'] == ref_group][item_cols].mean().values
+#     llm_means = df[df['source'] == comp_group][item_cols].mean().values
     
-    # Correlation
-    correlation = np.corrcoef(human_means, llm_means)[0, 1]
+#     # Correlation
+#     correlation = np.corrcoef(human_means, llm_means)[0, 1]
     
-    # Mean absolute difference
-    mad = np.mean(np.abs(llm_means - human_means))
+#     # Mean absolute difference
+#     mad = np.mean(np.abs(llm_means - human_means))
     
-    # Item-by-item t-tests
-    sig_count = 0
-    cohen_d_values = []
+#     # Item-by-item t-tests
+#     sig_count = 0
+#     cohen_d_values = []
     
-    for item_col in item_cols:
-        human_vals = df[df['source'] == ref_group][item_col].values
-        llm_vals = df[df['source'] == comp_group][item_col].values
+#     for item_col in item_cols:
+#         human_vals = df[df['source'] == ref_group][item_col].values
+#         llm_vals = df[df['source'] == comp_group][item_col].values
         
-        _, p_val = stats.ttest_ind(llm_vals, human_vals)
-        if p_val < 0.05:
-            sig_count += 1
+#         _, p_val = stats.ttest_ind(llm_vals, human_vals)
+#         if p_val < 0.05:
+#             sig_count += 1
         
-        d = cohen_d(llm_vals, human_vals)
-        cohen_d_values.append(abs(d))
+#         d = cohen_d(llm_vals, human_vals)
+#         cohen_d_values.append(abs(d))
     
-    return {
-        'Model': comp_group,
-        'Correlation': correlation,
-        'Mean_Abs_Diff': mad,
-        'Significant_Items': f"{sig_count}/50",
-        'Avg_Cohens_d': np.mean(cohen_d_values)
-    }
+#     return {
+#         'Model': comp_group,
+#         'Correlation': correlation,
+#         'Mean_Abs_Diff': mad,
+#         'Significant_Items': f"{sig_count}/50",
+#         'Avg_Cohens_d': np.mean(cohen_d_values)
+#     }
 
 # ==============================================================================
 # TABLE 4: DISTRIBUTIONAL SIMILARITY TRAIT LEVEL
 # ==============================================================================
 
-def distributional_similarity(df: pd.DataFrame,
-                              ref_group: str = "Human",
-                              comp_group: str = "LLM") -> pd.DataFrame:
-    """
-    Compute distributional similarity metrics for each trait
-    """
-    results = []
+# def distributional_similarity(df: pd.DataFrame,
+#                               ref_group: str = "Human",
+#                               comp_group: str = "LLM") -> pd.DataFrame:
+#     """
+#     Compute distributional similarity metrics for each trait
+#     """
+#     results = []
     
-    for trait_name, items in TRAIT_STRUCTURE.items():
-        item_cols = [f'item_{i}' for i in items]
+#     for trait_name, items in TRAIT_STRUCTURE.items():
+#         item_cols = [f'item_{i}' for i in items]
         
-        wasserstein_dists = []
-        js_divs = []
-        chi_sq_stats = []
-        max_chi_item = ""
-        max_chi_val = 0
+#         wasserstein_dists = []
+#         js_divs = []
+#         chi_sq_stats = []
+#         max_chi_item = ""
+#         max_chi_val = 0
         
-        for item_col in item_cols:
-            human_vals = df[df['source'] == ref_group][item_col].dropna().values
-            llm_vals = df[df['source'] == comp_group][item_col].dropna().values
+#         for item_col in item_cols:
+#             human_vals = df[df['source'] == ref_group][item_col].dropna().values
+#             llm_vals = df[df['source'] == comp_group][item_col].dropna().values
             
-            # Wasserstein distance
-            wd = wasserstein_distance(human_vals, llm_vals)
-            wasserstein_dists.append(wd)
+#             # Wasserstein distance
+#             wd = wasserstein_distance(human_vals, llm_vals)
+#             wasserstein_dists.append(wd)
             
-            # Jensen-Shannon divergence
-            human_dist = np.bincount(human_vals.astype(int), minlength=6)[1:6]  # 1-5 scale
-            llm_dist = np.bincount(llm_vals.astype(int), minlength=6)[1:6]
+#             # Jensen-Shannon divergence
+#             human_dist = np.bincount(human_vals.astype(int), minlength=6)[1:6]  # 1-5 scale
+#             llm_dist = np.bincount(llm_vals.astype(int), minlength=6)[1:6]
             
-            human_dist = human_dist / human_dist.sum()
-            llm_dist = llm_dist / llm_dist.sum()
+#             human_dist = human_dist / human_dist.sum()
+#             llm_dist = llm_dist / llm_dist.sum()
             
-            js = jensen_shannon_divergence(human_dist, llm_dist)
-            js_divs.append(js)
+#             js = jensen_shannon_divergence(human_dist, llm_dist)
+#             js_divs.append(js)
             
-            # Chi-square test
-            contingency = pd.crosstab(
-                pd.Series(np.concatenate([['Human']*len(human_vals), ['LLM']*len(llm_vals)])),
-                pd.Series(np.concatenate([human_vals, llm_vals]))
-            )
-            chi2, _, _, _ = stats.chi2_contingency(contingency)
-            chi_sq_stats.append(chi2)
+#             # Chi-square test
+#             contingency = pd.crosstab(
+#                 pd.Series(np.concatenate([['Human']*len(human_vals), ['LLM']*len(llm_vals)])),
+#                 pd.Series(np.concatenate([human_vals, llm_vals]))
+#             )
+#             chi2, _, _, _ = stats.chi2_contingency(contingency)
+#             chi_sq_stats.append(chi2)
             
-            if chi2 > max_chi_val:
-                max_chi_val = chi2
-                max_chi_item = item_col
+#             if chi2 > max_chi_val:
+#                 max_chi_val = chi2
+#                 max_chi_item = item_col
         
-        results.append({
-            'Trait': trait_name,
-            'Avg_Wasserstein': np.mean(wasserstein_dists),
-            'Avg_JS_divergence': np.mean(js_divs),
-            'Avg_Chi_sq': np.mean(chi_sq_stats),
-            'Highest_mismatch_item': max_chi_item
-        })
+#         results.append({
+#             'Trait': trait_name,
+#             'Avg_Wasserstein': np.mean(wasserstein_dists),
+#             'Avg_JS_divergence': np.mean(js_divs),
+#             'Avg_Chi_sq': np.mean(chi_sq_stats),
+#             'Highest_mismatch_item': max_chi_item
+#         })
     
-    return pd.DataFrame(results)
+#     return pd.DataFrame(results)
 
-# ==============================================================================
-# TABLE 4B: ITEM-LEVEL DISTRIBUTIONAL ANALYSIS
-# ==============================================================================
+# # ==============================================================================
+# # TABLE 4B: ITEM-LEVEL DISTRIBUTIONAL ANALYSIS
+# # ==============================================================================
 
-def item_distributional_analysis(df: pd.DataFrame,
-                                 ref_group: str = "Human",
-                                 comp_group: str = "LLM") -> pd.DataFrame:
-    """
-    Compute distributional similarity metrics for each individual item
-    """
-    results = []
+# def item_distributional_analysis(df: pd.DataFrame,
+#                                  ref_group: str = "Human",
+#                                  comp_group: str = "LLM") -> pd.DataFrame:
+#     """
+#     Compute distributional similarity metrics for each individual item
+#     """
+#     results = []
     
-    for item_num in range(1, 51):
-        item_col = f'item_{item_num}'
+#     for item_num in range(1, 51):
+#         item_col = f'item_{item_num}'
         
-        # Determine trait
-        trait = None
-        for trait_name, items in TRAIT_STRUCTURE.items():
-            if item_num in items:
-                trait = trait_name
-                break
+#         # Determine trait
+#         trait = None
+#         for trait_name, items in TRAIT_STRUCTURE.items():
+#             if item_num in items:
+#                 trait = trait_name
+#                 break
         
-        human_vals = df[df['source'] == ref_group][item_col].dropna().values
-        llm_vals = df[df['source'] == comp_group][item_col].dropna().values
+#         human_vals = df[df['source'] == ref_group][item_col].dropna().values
+#         llm_vals = df[df['source'] == comp_group][item_col].dropna().values
         
-        # Calculate distribution metrics
-        wd = wasserstein_distance(human_vals, llm_vals)
+#         # Calculate distribution metrics
+#         wd = wasserstein_distance(human_vals, llm_vals)
         
-        # Jensen-Shannon divergence
-        human_dist = np.bincount(human_vals.astype(int), minlength=6)[1:6]
-        llm_dist = np.bincount(llm_vals.astype(int), minlength=6)[1:6]
+#         # Jensen-Shannon divergence
+#         human_dist = np.bincount(human_vals.astype(int), minlength=6)[1:6]
+#         llm_dist = np.bincount(llm_vals.astype(int), minlength=6)[1:6]
         
-        human_dist = human_dist / human_dist.sum()
-        llm_dist = llm_dist / llm_dist.sum()
+#         human_dist = human_dist / human_dist.sum()
+#         llm_dist = llm_dist / llm_dist.sum()
         
-        js = jensen_shannon_divergence(human_dist, llm_dist)
+#         js = jensen_shannon_divergence(human_dist, llm_dist)
         
-        # Chi-square test
-        contingency = pd.crosstab(
-            pd.Series(np.concatenate([['Human']*len(human_vals), ['LLM']*len(llm_vals)])),
-            pd.Series(np.concatenate([human_vals, llm_vals]))
-        )
-        chi2, _, _, _ = stats.chi2_contingency(contingency)
+#         # Chi-square test
+#         contingency = pd.crosstab(
+#             pd.Series(np.concatenate([['Human']*len(human_vals), ['LLM']*len(llm_vals)])),
+#             pd.Series(np.concatenate([human_vals, llm_vals]))
+#         )
+#         chi2, _, _, _ = stats.chi2_contingency(contingency)
         
-        results.append({
-            'Item': item_num,
-            'Trait': trait,
-            'Wasserstein_Distance': wd,
-            'JS_Divergence': js,
-            'Chi_Square': chi2
-        })
+#         results.append({
+#             'Item': item_num,
+#             'Trait': trait,
+#             'Wasserstein_Distance': wd,
+#             'JS_Divergence': js,
+#             'Chi_Square': chi2
+#         })
     
-    return pd.DataFrame(results)
+#     return pd.DataFrame(results)
 
 # # ==============================================================================
 # # TABLE 5: STRUCTURAL COMPARISON
@@ -473,52 +473,52 @@ def item_distributional_analysis(df: pd.DataFrame,
 # # TABLE 6: CLASSIFICATION/SEPARABILITY
 # # ==============================================================================
 
-# def classification_analysis(trait_scores: pd.DataFrame,
-#                             ref_group: str = "Human",
-#                             comp_group: str = "GPT-4.1") -> dict:
-#     """
-#     Analyze separability of human and LLM responses using classification
-#     """
-#     # Prepare data
-#     traits = list(TRAIT_STRUCTURE.keys())
-#     class_data = trait_scores[trait_scores['source'].isin([ref_group, comp_group])].copy()
-#     class_data['group'] = (class_data['source'] == comp_group).astype(int)
+def classification_analysis(trait_scores: pd.DataFrame,
+                            ref_group: str = "Human",
+                            comp_group: str = "GPT-4.1") -> dict:
+    """
+    Analyze separability of human and LLM responses using classification
+    """
+    # Prepare data
+    traits = list(TRAIT_STRUCTURE.keys())
+    class_data = trait_scores[trait_scores['source'].isin([ref_group, comp_group])].copy()
+    class_data['group'] = (class_data['source'] == comp_group).astype(int)
     
-#     X = class_data[traits].values
-#     y = class_data['group'].values
+    X = class_data[traits].values
+    y = class_data['group'].values
     
-#     # Logistic regression
-#     model = LogisticRegression(max_iter=1000)
-#     model.fit(X, y)
+    # Logistic regression
+    model = LogisticRegression(max_iter=1000)
+    model.fit(X, y)
     
-#     # Predictions
-#     y_pred_proba = model.predict_proba(X)[:, 1]
-#     y_pred = (y_pred_proba > 0.5).astype(int)
+    # Predictions
+    y_pred_proba = model.predict_proba(X)[:, 1]
+    y_pred = (y_pred_proba > 0.5).astype(int)
     
-#     # Metrics
-#     auc = roc_auc_score(y, y_pred_proba)
-#     accuracy = accuracy_score(y, y_pred)
-#     f1 = f1_score(y, y_pred)
+    # Metrics
+    auc = roc_auc_score(y, y_pred_proba)
+    accuracy = accuracy_score(y, y_pred)
+    f1 = f1_score(y, y_pred)
     
-#     # Mahalanobis distance
-#     human_traits = class_data[class_data['group'] == 0][traits].values
-#     llm_traits = class_data[class_data['group'] == 1][traits].values
+    # Mahalanobis distance
+    human_traits = class_data[class_data['group'] == 0][traits].values
+    llm_traits = class_data[class_data['group'] == 1][traits].values
     
-#     pooled_data = np.vstack([human_traits, llm_traits])
-#     cov_matrix = np.cov(pooled_data.T)
+    pooled_data = np.vstack([human_traits, llm_traits])
+    cov_matrix = np.cov(pooled_data.T)
     
-#     mean_human = human_traits.mean(axis=0)
-#     mean_llm = llm_traits.mean(axis=0)
+    mean_human = human_traits.mean(axis=0)
+    mean_llm = llm_traits.mean(axis=0)
     
-#     mahal_dist = mahalanobis_distance(mean_llm, mean_human, cov_matrix)
+    mahal_dist = mahalanobis_distance(mean_llm, mean_human, cov_matrix)
     
-#     return {
-#         'Comparison': f"{ref_group} vs {comp_group}",
-#         'AUC': auc,
-#         'Accuracy': accuracy,
-#         'F1_score': f1,
-#         'Mean_Mahalanobis': mahal_dist
-#     }
+    return {
+        'Comparison': f"{ref_group} vs {comp_group}",
+        'AUC': auc,
+        'Accuracy': accuracy,
+        'F1_score': f1,
+        'Mean_Mahalanobis': mahal_dist
+    }
 
 # # ==============================================================================
 # # TABLE 7: RESPONSE STYLE METRICS
@@ -714,56 +714,158 @@ def run_multi_model_analysis(human_filepath: str, model_paths: Dict[str, str], o
         count = len(df[df['source'] == model_name])
         print(f"  - {model_name}: {count}")
     
-    print("\nRunning analyses for each model...")
-    
     all_results = {
         'df': df,
         'trait_scores': trait_scores,
-        'models': {}
+        'models': {},
+        'tables': {}
     }
     
-    # Run analyses for each model
+    # ===========================================================================
+    # TABLE 2: TRAIT-LEVEL MEAN COMPARISONS
+    # ===========================================================================
+    # Uncomment to run Table 2 analysis
+    # print("\n" + "="*80)
+    # print("Computing Table 2: Trait-level mean comparisons")
+    # print("="*80)
+    # table2_results = []
+    # for model_name in model_paths.keys():
+    #     traits = list(TRAIT_STRUCTURE.keys())
+    #     for trait in traits:
+    #         human_vals = trait_scores[trait_scores['source'] == 'Human'][trait].values
+    #         model_vals = trait_scores[trait_scores['source'] == model_name][trait].values
+    #         
+    #         t_stat, p_val = stats.ttest_ind(model_vals, human_vals)
+    #         d = cohen_d(model_vals, human_vals)
+    #         
+    #         table2_results.append({
+    #             'Model': model_name,
+    #             'Trait': trait,
+    #             'Human_Mean': human_vals.mean(),
+    #             'Human_SD': human_vals.std(),
+    #             'Model_Mean': model_vals.mean(),
+    #             'Model_SD': model_vals.std(),
+    #             'Mean_Diff': model_vals.mean() - human_vals.mean(),
+    #             't_statistic': t_stat,
+    #             'p_value': p_val,
+    #             'Cohens_d': d
+    #         })
+    # table2 = pd.DataFrame(table2_results)
+    # table2.to_csv(f"{output_dir}/table2_trait_comparison.csv", index=False)
+    # print(f"Saved: {output_dir}/table2_trait_comparison.csv")
+    # all_results['tables']['table2'] = table2
+    
+    # ===========================================================================
+    # TABLE 3: ITEM-LEVEL AGREEMENT
+    # ===========================================================================
+    # Uncomment to run Table 3 analysis
+    # print("\n" + "="*80)
+    # print("Computing Table 3: Item-level agreement")
+    # print("="*80)
+    # table3_results = []
+    # for model_name in model_paths.keys():
+    #     print(f"  - {model_name}")
+    #     result = item_level_agreement(df, "Human", model_name)
+    #     table3_results.append(result)
+    # table3 = pd.DataFrame(table3_results)
+    # table3.to_csv(f"{output_dir}/table3_item_agreement.csv", index=False)
+    # print(f"Saved: {output_dir}/table3_item_agreement.csv")
+    # print("\nTable 3 Results:")
+    # print(table3.to_string(index=False))
+    # all_results['tables']['table3'] = table3
+    
+    # ===========================================================================
+    # TABLE 4: DISTRIBUTIONAL SIMILARITY (TRAIT-LEVEL)
+    # ===========================================================================
+    # Uncomment to run Table 4 analysis
+    # print("\n" + "="*80)
+    # print("Computing Table 4: Distributional similarity (trait-level)")
+    # print("="*80)
+    # table4_all_models = []
+    # for model_name in model_paths.keys():
+    #     print(f"  - {model_name}")
+    #     table4 = distributional_similarity(df, "Human", model_name)
+    #     table4['Model'] = model_name
+    #     table4_all_models.append(table4)
+    # table4 = pd.concat(table4_all_models, ignore_index=True)
+    # table4.to_csv(f"{output_dir}/table4_distributional_similarity.csv", index=False)
+    # print(f"Saved: {output_dir}/table4_distributional_similarity.csv")
+    # all_results['tables']['table4'] = table4
+    
+    # ===========================================================================
+    # TABLE 4B: ITEM-LEVEL DISTRIBUTIONAL ANALYSIS
+    # ===========================================================================
+    # Uncomment to run Table 4B analysis
+    # print("\n" + "="*80)
+    # print("Computing Table 4B: Item-level distributional analysis")
+    # print("="*80)
+    # table4b_all_models = []
+    # for model_name in model_paths.keys():
+    #     print(f"  - {model_name}")
+    #     table4b = item_distributional_analysis(df, "Human", model_name)
+    #     table4b['Model'] = model_name
+    #     table4b_all_models.append(table4b)
+    # table4b = pd.concat(table4b_all_models, ignore_index=True)
+    # table4b.to_csv(f"{output_dir}/table4b_item_distributions.csv", index=False)
+    # print(f"Saved: {output_dir}/table4b_item_distributions.csv")
+    # all_results['tables']['table4b'] = table4b
+    
+    # ===========================================================================
+    # TABLE 5: STRUCTURAL COMPARISON
+    # ===========================================================================
+    # Uncomment to run Table 5 analysis
+    # print("\n" + "="*80)
+    # print("Computing Table 5: Structural comparison")
+    # print("="*80)
+    # struct_human = structural_comparison(df, "Human")
+    # struct_results = [
+    #     {**struct_human['results'], 'Matrix_correlation': np.nan, 'Factor_congruence': np.nan}
+    # ]
+    # human_cor_matrix = struct_human['cor_matrix']
+    # 
+    # for model_name in model_paths.keys():
+    #     print(f"  - {model_name}")
+    #     struct_model = structural_comparison(df, model_name)
+    #     matrix_cor = compute_matrix_similarity(human_cor_matrix, struct_model['cor_matrix'])
+    #     struct_results.append({
+    #         **struct_model['results'],
+    #         'Matrix_correlation': matrix_cor,
+    #         'Factor_congruence': np.nan
+    #     })
+    # 
+    # table5 = pd.DataFrame(struct_results)
+    # table5.to_csv(f"{output_dir}/table5_structural_comparison.csv", index=False)
+    # print(f"Saved: {output_dir}/table5_structural_comparison.csv")
+    # print("\nTable 5 Results Summary:")
+    # for idx, row in table5.iterrows():
+    #     print(f"\n  {row['Source']}:")
+    #     print(f"    Mean inter-item correlation: {row['Mean_inter_item_cor']:.3f}")
+    #     if pd.notna(row['Matrix_correlation']):
+    #         print(f"    Matrix correlation: {row['Matrix_correlation']:.3f}")
+    #     for trait in TRAIT_STRUCTURE.keys():
+    #         alpha_col = f'Alpha_{trait}'
+    #         if alpha_col in row and pd.notna(row[alpha_col]):
+    #             print(f"    Alpha ({trait}): {row[alpha_col]:.3f}")
+    # all_results['tables']['table5'] = table5
+    
+    # ===========================================================================
+    # TABLE 6: CLASSIFICATION/SEPARABILITY
+    # ===========================================================================
+    print("\n" + "="*80)
+    print("Computing Table 6: Classification/Separability")
+    print("="*80)
+    table6_results = []
     for model_name in model_paths.keys():
-        print(f"\n{'='*80}")
-        print(f"Analyzing {model_name}")
-        print(f"{'='*80}")
-        
-        model_results = {}
-        
-        # Table 3: Item-level agreement
-        print(f"  - Table 3: Item-level agreement")
-        table3 = pd.DataFrame([
-            item_level_agreement(df, "Human", model_name)
-        ])
-        filename = f"{output_dir}/table3_item_agreement_{model_name.lower().replace(' ', '_')}.csv"
-        table3.to_csv(filename, index=False)
-        print(f"    Saved: {filename}")
-        model_results['table3'] = table3
-        
-        # Table 4: Distributional similarity (trait-level)
-        print(f"  - Table 4: Distributional similarity")
-        table4 = distributional_similarity(df, "Human", model_name)
-        filename = f"{output_dir}/table4_distributional_{model_name.lower().replace(' ', '_')}.csv"
-        table4.to_csv(filename, index=False)
-        print(f"    Saved: {filename}")
-        model_results['table4'] = table4
-        
-        # Table 4B: Item-level distributional analysis
-        print(f"  - Table 4B: Item-level distributional analysis")
-        table4b = item_distributional_analysis(df, "Human", model_name)
-        filename = f"{output_dir}/table4b_item_distributions_{model_name.lower().replace(' ', '_')}.csv"
-        table4b.to_csv(filename, index=False)
-        print(f"    Saved: {filename}")
-        model_results['table4b'] = table4b
-        
-        # Print summary
-        print(f"\n{model_name} Results Summary:")
-        print(f"  Item-level correlation: {table3['Correlation'].values[0]:.3f}")
-        print(f"  Mean absolute difference: {table3['Mean_Abs_Diff'].values[0]:.3f}")
-        print(f"  Significant items: {table3['Significant_Items'].values[0]}")
-        print(f"  Average Cohen's d: {table3['Avg_Cohens_d'].values[0]:.3f}")
-        
-        all_results['models'][model_name] = model_results
+        print(f"  - {model_name}")
+        result = classification_analysis(trait_scores, "Human", model_name)
+        table6_results.append(result)
+    
+    table6 = pd.DataFrame(table6_results)
+    table6.to_csv(f"{output_dir}/table6_classification.csv", index=False)
+    print(f"Saved: {output_dir}/table6_classification.csv")
+    print("\nTable 6 Results Summary (Classification/Separability):")
+    print(table6.to_string(index=False))
+    all_results['tables']['table6'] = table6
     
     print(f"\n{'='*80}")
     print(f"Analysis complete! All results saved to {output_dir}/")
@@ -805,18 +907,18 @@ def run_full_analysis(human_filepath: str, llm_filepath: str, output_dir: str = 
     # print(table3.to_string())
     
     # # Table 4: Distributional similarity
-    print("  - Table 4: Distributional similarity")
-    table4 = distributional_similarity(df, "Human", "LLM")
-    table4.to_csv(f"{output_dir}/table4_distributional_similarity.csv", index=False)
-    print("\nDistributional similarity results:")
-    print(table4.to_string())
+    # print("  - Table 4: Distributional similarity")
+    # table4 = distributional_similarity(df, "Human", "LLM")
+    # table4.to_csv(f"{output_dir}/table4_distributional_similarity.csv", index=False)
+    # print("\nDistributional similarity results:")
+    # print(table4.to_string())
     
-    # Table 4B: Item-level distributional analysis
-    print("\n  - Table 4B: Item-level distributional analysis")
-    table4b = item_distributional_analysis(df, "Human", "LLM")
-    table4b.to_csv(f"{output_dir}/table4b_item_distributions.csv", index=False)
-    print("\nItem-level distribution results:")
-    print(table4b.to_string())
+    # # Table 4B: Item-level distributional analysis
+    # print("\n  - Table 4B: Item-level distributional analysis")
+    # table4b = item_distributional_analysis(df, "Human", "LLM")
+    # table4b.to_csv(f"{output_dir}/table4b_item_distributions.csv", index=False)
+    # print("\nItem-level distribution results:")
+    # print(table4b.to_string())
     
     # # Table 5: Structural comparison
     # print("  - Table 5: Structural comparison")
@@ -838,13 +940,13 @@ def run_full_analysis(human_filepath: str, llm_filepath: str, output_dir: str = 
     # table5.to_csv(f"{output_dir}/table5_structural_comparison.csv", index=False)
     
     # # Table 6: Classification
-    # print("  - Table 6: Classification/separability")
-    # table6 = pd.DataFrame([
-    #     classification_analysis(trait_scores, "Human", "GPT-4.1"),
-    #     classification_analysis(trait_scores, "Human", "Claude"),
-    #     classification_analysis(trait_scores, "Human", "Llama")
-    # ])
-    # table6.to_csv(f"{output_dir}/table6_classification.csv", index=False)
+    print("  - Table 6: Classification/separability")
+    table6 = pd.DataFrame([
+        classification_analysis(trait_scores, "Human", "GPT-4.1"),
+        classification_analysis(trait_scores, "Human", "Claude"),
+        classification_analysis(trait_scores, "Human", "Llama")
+    ])
+    table6.to_csv(f"{output_dir}/table6_classification.csv", index=False)
     
     # # Table 7: Response style
     # print("  - Table 7: Response style metrics")
@@ -873,8 +975,10 @@ def run_full_analysis(human_filepath: str, llm_filepath: str, output_dir: str = 
         'trait_scores': trait_scores,
         # 'table2': None,  # table2,
         # 'table3': None,  # table3,
-        'table4': table4,
-        'table4b': table4b,
+        # 'table4': table4,
+        # 'table4b': table4b,
+        # 'table 5: structural_comparison': table5,
+        'table6': table6
     }
 
 
