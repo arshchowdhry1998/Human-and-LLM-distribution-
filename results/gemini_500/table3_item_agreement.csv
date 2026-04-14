@@ -1,0 +1,5 @@
+Model,Correlation with human itemmeans (r),Mean absolute difference in item means,Items with significant mean difference,Average Cohen’s d across items
+G-2.5-Lite,0.763,0.361,35/50,0.306
+G-2.5,0.857,0.721,46/50,0.638
+G-3,0.735,1.005,48/50,0.885
+G-3.1-Lite,0.767,0.573,48/50,0.489
